@@ -1,0 +1,329 @@
+---
+title: Debugging Silent Failures with Session Replay & Logs
+description: Use Session Replay and Sentry Logs to catch silent validation failures that block users from completing checkout
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import ScaledImage from '../../components/ScaledImage.astro';
+
+You just migrated to a new payment gateway and instrumented your checkout form. Everything looks great in testing. But users are complaining they can't complete checkout. You test it yourself with a Visa card (4242 4242 4242 4242) and it works perfectly. What's happening?
+
+This is where Session Replay becomes invaluable - **catching silent failures that don't throw errors but completely block users**.
+
+## Learning Objectives
+
+By the end of this module, you will:
+
+- Use Session Replay to identify silent validation failures
+- Combine Session Replay with Sentry Logs to understand user issues
+- Debug problems that only affect certain user segments (Amex cardholders)
+- Fix UX issues by surfacing validation errors to users
+
+:::note[Silent Failures Are Conversion Killers]
+Technical metrics might look fine (no errors, good performance), but users are blocked from completing actions. Session Replay shows you what's actually happening in user sessions, revealing issues that traditional monitoring misses.
+:::
+
+## The Problem: Users Can't Checkout
+
+After your payment gateway migration, you're seeing:
+
+- **Customer support tickets**: "Can't complete my order"
+- **Error rate**: Normal (< 0.5%) - no technical failures
+- **Your testing**: Checkout works perfectly with test Visa cards
+- **The mystery**: Some users are clearly blocked, but why?
+
+Without Session Replay, you'd be debugging blind. With it, you can **watch exactly what's happening**.
+
+## Discovering the Issue with Session Replay & Logs
+
+Let's use Session Replay and Sentry Logs together to find out what users are experiencing.
+
+<Steps>
+
+1. **Navigate to Session Replays**
+   - Open Sentry (Frontend Project)
+   - Go to **Explore** -> **Replays** in the left sidebar
+
+2. **Filter for checkout sessions**
+
+   In the Replays view, use:
+
+   ```
+   url contains /cart
+   ```
+
+   This finds users who visited the cart/checkout page.
+
+   <ScaledImage
+     src="/assets/img/session-replay-filter.png"
+     alt="Filter for checkout sessions"
+   />
+
+3. **Find a problematic session**
+
+   Look for replays where:
+   - User filled out the checkout form
+   - User clicked "Place Order" multiple times
+   - Order was never completed
+
+4. **Watch the replay**
+
+   Press play and watch what the user experienced:
+   - User adds items to cart
+   - Clicks "Checkout" - checkout form appears
+   - Fills in card details:
+     - Card: 3782 8224 6310 005 (Amex)
+     - CVV: 1234 (4 digits - Amex CVVs are 4 digits!)
+   - Clicks "Place Order"
+   - **Clicks again... nothing happens**
+   - Button doesn't disable, no error shown, no feedback
+   - User tries 3-4 more times
+   - Eventually gives up and leaves
+
+5. **Check the Logs in Sentry**
+
+   Look at the Logs tab in the replay. Because you enabled `consoleLoggingIntegration` in Module 1, all console statements are captured as structured logs in Sentry. You'll see:
+
+   ```
+   Validating payment form...
+   CVV validation failed: Expected 3 digits, got 4
+   Checkout button clicked
+   ```
+
+   <ScaledImage
+     src="/assets/img/session-replay-logs.png"
+     alt="Logs in Sentry"
+   />
+
+   **Aha!** The validation is failing because the user entered a 4-digit CVV (Amex), but your code expects exactly 3 digits (Visa/Mastercard).
+
+6. **The root cause revealed**
+
+   The logs in Sentry show exactly what's failing. Your new payment form validates CVV length client-side, but:
+   - ❌ Only accepts 3-digit CVVs (blocking all Amex users)
+   - ❌ Validation failure is logged to Sentry but not shown to users
+   - ❌ Button doesn't disable or show any feedback
+   - ❌ Users have no idea what's wrong
+
+</Steps>
+
+## Understanding the Broken Code
+
+Looking at the current checkout implementation in `apps/web/src/pages/Cart.tsx`, here's what's causing the silent failure:
+
+```tsx title="Cart.tsx - The Problem"
+// Validation function
+const validateCVV = (cvv: string) => {
+  if (cvv.length !== 3) {
+    // ❌ Logs to Sentry but user sees nothing!
+    console.error(
+      `CVV validation failed: Expected 3 digits, got ${cvv.length}`
+    );
+    return false;
+  }
+  return true;
+};
+
+const handleCheckout = async () => {
+  console.log('Checkout button clicked');
+
+  // Validate payment form
+  const isValidCVV = validateCVV(formData.cvv);
+
+  if (!isValidCVV) {
+    // ❌ Silent failure - just returns, no user feedback!
+    return;
+  }
+
+  // Process payment...
+  const response = await purchaseService.createPurchase(items, total, token);
+  // ...
+};
+```
+
+**Why this breaks:**
+
+- Visa/Mastercard CVVs: 3 digits (123) ✅ Works
+- Amex CVVs: 4 digits (1234) ❌ Fails silently
+- ~25% of US credit cards are Amex - that's 25% of users blocked!
+
+## The Fix: Show Validation Errors to Users
+
+Let's fix this by showing validation errors and supporting both card types.
+
+<Steps>
+
+1. **Add error state to track validation failures**
+
+   Update `apps/web/src/pages/Cart.tsx`:
+
+   ```tsx title="Cart.tsx - Add State" ins={4}
+   function Cart() {
+     const [isCheckingOut, setIsCheckingOut] = useState(false);
+     const [checkoutError, setCheckoutError] = useState<string | null>(null);
+     const [validationError, setValidationError] = useState<string | null>(null);
+
+     // ... rest of component
+   ```
+
+2. **Update CVV validation to support both card types**
+
+   ```tsx title="Cart.tsx - Fix Validation" ins={1-2,4-9,12-14} del={3,10-11}
+   import * as Sentry from '@sentry/react';
+
+   const validateCVV = (cvv: string) => {
+     // Support both Visa/MC (3 digits) and Amex (4 digits)
+     if (cvv.length < 3 || cvv.length > 4) {
+       const error = 'CVV must be 3 or 4 digits';
+       console.error(`CVV validation failed: ${error}, got ${cvv.length}`);
+       return { valid: false, error };
+     }
+     if (cvv.length !== 3) {
+       console.error(
+         `CVV validation failed: Expected 3 digits, got ${cvv.length}`
+       );
+       return false;
+     }
+     return { valid: true, error: null };
+   };
+   ```
+
+3. **Show validation errors to users**
+
+   ```tsx title="Cart.tsx - Handle Validation" ins={2-3,6-11,14-16}
+   const handleCheckout = async () => {
+     console.log('Checkout button clicked');
+     setValidationError(null); // Clear previous errors
+
+     // Validate CVV
+     const cvvValidation = validateCVV(formData.cvv);
+     if (!cvvValidation.valid) {
+       setValidationError(cvvValidation.error);
+
+       // Log to Sentry for analytics
+       Sentry.logger.warn('Checkout CVV validation failed', {
+         cvvLength: formData.cvv.length,
+         cardType: detectCardType(formData.cardNumber),
+       });
+
+       return; // Don't proceed with checkout
+     }
+
+     // CVV valid, proceed with checkout...
+     setIsCheckingOut(true);
+     // ... rest of checkout logic
+   };
+   ```
+
+4. **Display validation errors in the UI**
+
+   Add error display above the checkout button:
+
+   ```tsx title="Cart.tsx - Display Errors" ins={2-8}
+   <div className="bg-white rounded-lg shadow-md p-6 h-fit">
+     {validationError && (
+       <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+         <p className="font-semibold">Validation Error</p>
+         <p className="text-sm">{validationError}</p>
+       </div>
+     )}
+
+     <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+     {/* ... rest of order summary ... */}
+
+     <button
+       onClick={handleCheckout}
+       disabled={isCheckingOut}
+       className="w-full mt-6 bg-[#1a1a2e] text-white py-3 rounded-lg..."
+     >
+       {isCheckingOut ? 'Processing...' : 'Checkout'}
+     </button>
+   </div>
+   ```
+
+5. **Test with different card types**
+
+   Now test the fixed checkout:
+
+   **Visa (3-digit CVV):**
+   - Card: 4242 4242 4242 4242
+   - CVV: 123 ✅ Works
+
+   **Amex (4-digit CVV):**
+   - Card: 3782 8224 6310 005
+   - CVV: 1234 ✅ Works now!
+
+   **Invalid CVV:**
+   - CVV: 12 ❌ Shows error: "CVV must be 3 or 4 digits"
+   - User knows exactly what to fix
+   - Logs in Sentry still capture the validation attempt for analytics
+
+</Steps>
+
+## Measuring the Impact
+
+After deploying this fix, you can track improvements:
+
+```tsx title="Cart.tsx - Track Validation Metrics"
+// When validation fails
+if (!cvvValidation.valid) {
+  setValidationError(cvvValidation.error);
+
+  const span = Sentry.getActiveSpan();
+  if (span) {
+    span.setAttributes({
+      'checkout.validation_failed': true,
+      'checkout.validation_field': 'cvv',
+      'checkout.cvv_length': formData.cvv.length,
+    });
+  }
+
+  Sentry.logger.warn('Checkout CVV validation failed', {
+    cvvLength: formData.cvv.length,
+    error: cvvValidation.error,
+  });
+
+  return;
+}
+
+// When validation passes
+console.log('CVV validation passed');
+const span = Sentry.getActiveSpan();
+if (span) {
+  span.setAttribute('checkout.validation_passed', true);
+}
+```
+
+With these span attributes, you can now query in Sentry to see:
+
+- How often CVV validation fails vs passes
+- Which CVV lengths are being rejected
+- Track improvements after the fix
+
+## Key Takeaways
+
+- **Session Replay reveals silent UX failures** that don't throw errors but block users completely
+- **Sentry Logs + Replay = complete picture** - see what happened AND why it happened
+- **Always show validation errors to users** - silent failures are terrible UX
+- **Test with different user scenarios** - Visa works ≠ everything works
+- **Segment-specific issues** (Amex users) are invisible without replay + logs data
+- **Structured logging with Sentry** provides debugging context correlated with replays
+
+:::note[What's Next?]
+You've now built a complete monitoring system: performance tracking, distributed tracing, and user behavior analysis. In the final module, we'll set up alerts and dashboards to protect these improvements in production.
+:::
+
+## Production Checklist
+
+Before relying on Session Replay for production monitoring:
+
+- [ ] Session Replay enabled (already done in Module 1)
+- [ ] Sentry Logs integration active (`enableLogs: true` + `consoleLoggingIntegration`)
+- [ ] Privacy settings verified (sensitive inputs masked)
+- [ ] Team trained on finding and watching replays
+- [ ] Team knows how to view Logs within replays
+- [ ] Validation errors always shown to users
+
+---
+
+**Next up:** We'll set up production alerts and use Sentry's AI to automatically detect and fix issues.

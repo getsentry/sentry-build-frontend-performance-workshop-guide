@@ -26,12 +26,12 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
 ---
 
 <figure class={`scaled-image align-${align} ${className}`} style={`max-width: ${safeSize}%;`}>
-  <img 
-    src={src} 
-    alt={alt} 
-    width="100%" 
+  <img
+    src={src}
+    alt={alt}
+    width="100%"
     id={uniqueId}
-    class="clickable-image" 
+    class="clickable-image"
     onclick={`openLightbox('${src}', '${alt}')`}
   />
   {caption && <figcaption>{caption}</figcaption>}
@@ -46,41 +46,41 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     lightbox.id = 'image-lightbox';
     lightbox.className = 'lightbox';
     lightbox.style.display = 'none';
-    
+
     const lightboxContent = document.createElement('div');
     lightboxContent.className = 'lightbox-content';
-    
+
     const closeBtn = document.createElement('span');
     closeBtn.className = 'close-button';
     closeBtn.innerHTML = '&times;';
     closeBtn.onclick = closeLightbox;
-    
+
     const img = document.createElement('img');
     img.id = 'lightbox-img';
     img.alt = '';
     img.className = 'lightbox-image';
     img.onclick = closeLightbox; // Close when clicking on the lightbox image
-    
+
     const caption = document.createElement('div');
     caption.id = 'lightbox-caption';
     caption.className = 'lightbox-caption';
-    
+
     // Assemble lightbox
     lightboxContent.appendChild(closeBtn);
     lightboxContent.appendChild(img);
     lightboxContent.appendChild(caption);
     lightbox.appendChild(lightboxContent);
-    
+
     // Add to document body
     document.body.appendChild(lightbox);
-    
+
     // Close lightbox when clicking outside the image
     lightbox.addEventListener('click', function(event) {
       if (event.target === lightbox) {
         closeLightbox();
       }
     });
-    
+
     // Close on ESC key
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape') {
@@ -94,21 +94,21 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     const lightbox = document.getElementById('image-lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     const lightboxCaption = document.getElementById('lightbox-caption');
-    
+
     lightbox.style.display = 'flex';
     lightboxImg.src = src;
     lightboxImg.alt = alt;
     lightboxCaption.textContent = alt;
-    
+
     // Prevent page scrolling when lightbox is open
     document.body.style.overflow = 'hidden';
   }
-  
+
   // Close lightbox function
   function closeLightbox() {
     const lightbox = document.getElementById('image-lightbox');
     lightbox.style.display = 'none';
-    
+
     // Re-enable page scrolling
     document.body.style.overflow = 'auto';
   }
@@ -119,22 +119,22 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     margin: 1rem auto;
     display: block;
   }
-  
+
   .scaled-image.align-left {
     margin-left: 0;
     margin-right: auto;
   }
-  
+
   .scaled-image.align-center {
     margin-left: auto;
     margin-right: auto;
   }
-  
+
   .scaled-image.align-right {
     margin-left: auto;
     margin-right: 0;
   }
-  
+
   .scaled-image img.clickable-image {
     display: block;
     height: auto;
@@ -142,22 +142,22 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     cursor: pointer;
     transition: opacity 0.2s ease;
   }
-  
+
   .scaled-image.align-left img.clickable-image {
     margin-left: 0;
     margin-right: auto;
   }
-  
+
   .scaled-image.align-center img.clickable-image {
     margin-left: auto;
     margin-right: auto;
   }
-  
+
   .scaled-image.align-right img.clickable-image {
     margin-left: auto;
     margin-right: 0;
   }
-  
+
   .scaled-image img.clickable-image:hover {
     opacity: 0.9;
   }
@@ -169,15 +169,15 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     opacity: 0.8;
     font-style: italic;
   }
-  
+
   .scaled-image.align-left figcaption {
     text-align: left;
   }
-  
+
   .scaled-image.align-right figcaption {
     text-align: right;
   }
-  
+
   /* Lightbox styles */
   :global(.lightbox) {
     display: none;
@@ -192,7 +192,7 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     align-items: center;
     justify-content: center;
   }
-  
+
   :global(.lightbox-content) {
     position: relative;
     display: flex;
@@ -201,14 +201,14 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     max-width: 90%;
     max-height: 90%;
   }
-  
+
   :global(.lightbox-content img) {
     max-width: 100%;
     max-height: 90vh;
     object-fit: contain;
     cursor: pointer;
   }
-  
+
   :global(.close-button) {
     position: absolute;
     top: 0;
@@ -225,11 +225,11 @@ const uniqueId = `image-${Math.random().toString(36).substring(2, 11)}`;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     border: none;
   }
-  
+
   :global(.lightbox-caption) {
     color: white;
     text-align: center;
     padding: 10px 0;
     width: 100%;
   }
-</style> 
+</style>

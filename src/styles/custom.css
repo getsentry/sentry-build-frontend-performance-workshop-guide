@@ -35,7 +35,7 @@
   --sl-content-width: 65rem;
   --sl-sidebar-width: 18rem;
   --sl-font-size-sm: 0.95rem;
-  
+
   /* Increase base font sizes */
   --sl-text-base: 1.125rem; /* 18px instead of 16px */
   --sl-text-body: 1.125rem; /* Main body text */
@@ -67,9 +67,7 @@
     BlinkMacSystemFont,
     'Segoe UI',
     Roboto,
-    sans-serif !important;
-  font-weight: 400 !important; /* Inter 18pt regular weight */
-  font-style: normal !important; /* Ensure no italic */
+    sans-serif;
 }
 
 /* Enhance UI components to match Sentry's UI */
@@ -158,15 +156,15 @@ h6,
     text-align: center;
     gap: 2rem;
   }
-  
+
   [data-has-hero] .hero .sl-flex {
     order: 1;
   }
-  
+
   [data-has-hero] .hero .hero-image {
     order: 2;
   }
-  
+
   [data-has-hero] .hero img {
     transform: scale(1);
     max-width: 300px;
@@ -310,3 +308,8 @@ h6,
   font-size: 0.95rem !important; /* Slightly smaller than block code */
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
 }
+
+li ul {
+  margin-top: 0;
+}
+

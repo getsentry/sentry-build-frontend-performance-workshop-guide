@@ -14,13 +14,14 @@ Before you begin, ensure you have the following installed:
 
 - [Git](https://git-scm.com/downloads)
 - [Node.js](https://nodejs.org/) (version 18 or higher)
+- [pnpm](https://pnpm.io/) (recommended package manager)
 
 Additionally, you'll need a Sentry account to follow along with the tracing and monitoring portions of this workshop:
 
-- [Sign up for a free Sentry.io](https://sentry.io/signup/) if you don't already have an account
+- [Sign up for a free Sentry account](https://sentry.io/signup/) if you don't already have one.
 
 :::tip[Pro Tip]
-We recommend setting up two separate projects in your Sentry account: one for the frontend (React) and one for the backend (Node.js). This allows you to efficiently monitor each project more clearly. We'll be configuring our SDKs in the workshop, so all you need to do is create the new projects and have your DSN's handy.
+We recommend setting up two separate projects in your Sentry account: one for the frontend (React) and one for the backend (Express). This allows you to efficiently monitor each project more clearly. We'll be configuring our SDKs in the workshop, so all you need to do is create the new projects and have your DSNs handy.
 :::
 
 ## Setup Instructions
@@ -28,7 +29,7 @@ We recommend setting up two separate projects in your Sentry account: one for th
 <Steps>
 1. **Fork the repository**
 
-     Go to [https://github.com/getsentry/sentry-build-ai-workshop](https://github.com/getsentry/sentry-build-ai-workshop) and click the "Fork" button in the top right. We'll do this instead of simply cloning the repo because we'll demo features of AI agent, Seer which can open PRs to fix code for us.
+     Go to [https://github.com/getsentry/sentry-build-frontend-performance-workshop-app](https://github.com/getsentry/sentry-build-frontend-performance-workshop-app) and click the "Fork" button in the top right. We'll do this instead of simply cloning the repo because we'll demo features of Sentry's AI agent, Seer, which can open PRs to fix code for us.
 
      <ScaledImage src="/assets/img/repo-fork.png" alt="Forking the repository" />
 
@@ -42,74 +43,98 @@ We recommend setting up two separate projects in your Sentry account: one for th
      size={75}
    />
 
-3. **Then, clone your fork:**
+3. **Clone your fork into a directory we're going to call `unborked`**
 
-   ```bash
-   git clone https://github.com/<your-username>/sentry-build-ai-workshop.git
+   ```bash title="Cloning the repository"
+   git clone https://github.com/<your-username>/sentry-build-frontend-performance-workshop-app.git unborked
+   cd unborked
    ```
 
-4. **Navigate to the project directory**
+4. **Install dependencies**
 
-   ```bash
-   cd sentry-build-ai-workshop
+   ```bash title="Installing dependencies"
+   pnpm install && pnpm playwright:install
    ```
 
-5. **Install dependencies with PNPM**
+5. **Set up environment variables**
 
-   ```bash
-   pnpm i
+   The project uses a turborepo monorepo structure with `apps/web` (frontend) and `apps/api` (backend).
+
+   #### Frontend (`apps/web/.env`):
+
+   Create the frontend environment file:
+
+   ```bash title="Creating the frontend environment file"
+   cat > apps/web/.env << 'EOF'
+   VITE_API_BASE_URL=http://localhost:3001
+   EOF
    ```
 
-6. **Set up environment variables**
+   :::note
+   We'll add the Sentry DSN to this file in the next module when we instrument the frontend.
+   :::
 
-   ```bash
-   touch apps/frontend/.env
-   echo "VITE_API_URL=http://localhost:3001/api" >> apps/frontend/.env
+   #### Backend (`apps/api/.env`):
+
+   **Option A: Automatic Database setup (Recommended)**
+
+   Spin up a temporary Postgres database using Neon:
+
+   ```bash title="Creating a temporary Postgres database using Neon"
+   pnpm db:new
    ```
 
-   ```bash
-   touch apps/server/.env
-   echo "PORT=3001" >> apps/server/.env
-   cd apps/server
+   This will automatically generate a `.env` file inside `apps/api` with a `DATABASE_URL` environment variable. You can claim it to your account later if you want, but it's a good playground for this workshop.
+
+   **Option B: Manual Database Setup**
+
+   If you prefer to use your own PostgreSQL instance (local or hosted via [Neon](https://neon.tech)/[Supabase](https://supabase.com)), create the backend environment file:
+
+   ```bash title="Creating the backend environment file"
+   cat > apps/api/.env << 'EOF'
+   DATABASE_URL=postgresql://user:password@localhost:5432/unborked
+   EOF
    ```
 
-7. **Database Setup**
+   Replace `user:password@localhost:5432/unborked` with your actual database connection string.
 
-   We'll be using [NeonDB](https://neon.new/) for this workshop, so we need to set up the database. Navigate to the `apps/server` directory and run the following commands and select the defaults when prompted:
+   :::note
+   We'll add the Sentry DSN to this file in the next module when we instrument the backend.
+   :::
 
-   ```bash
-   pnpx neondb -y
-   ```
+6. **Run database migrations and seed data**
 
-8. **Seed the Database**
+   From the root `unborked` directory:
 
-   ```bash
-   pnpm db:generate
-   pnpm db:push
+   ```bash title="Running database migrations and seed data"
+   pnpm db:migrate
    pnpm db:seed
    ```
 
-9. **Start the Project (from the root)**
+7. **Start the development servers**
 
-   ```bash
-   cd ../..
+   This single command starts both frontend and backend:
+
+   ```bash title="Starting the development servers"
    pnpm dev
    ```
 
-10. **Access the application project**
+8. **Access the application**
 
-    The project will now be running:
-    - with the frontend running on [http://localhost:5173](http://localhost:5173)
-    - with the backend API running on [http://localhost:3001](http://localhost:3001)
+   The project will now be running:
+   - Frontend: [http://localhost:4173](http://localhost:4173)
+   - Backend API: [http://localhost:3001](http://localhost:3001)
 
 </Steps>
 
 ## What's Available After Setup
 
+<ScaledImage src="/assets/img/initial-app.png" alt="Unborked app" />
+
 Once you've completed the setup, you'll have access to:
 
-- A Vite-powered React frontend running at [http://localhost:5173](http://localhost:5173)
-- A Node.js backend API running at [http://localhost:3001](http://localhost:3001)
-- Full-stack JavaScript application ready for Sentry instrumentation
+- **E-commerce Frontend**: Vite + React + TypeScript application with product browsing, cart, and checkout
+- **Backend API**: Node.js + Express with Drizzle ORM connected to PostgreSQL
+- **Full-Stack Application**: Ready for Sentry performance and error monitoring instrumentation
 
-This setup will allow you to progress through the workshop and start implementing Sentry. This workshop will take you through setting up **Error Monitoring, Logging, Tracing**, and building visualizations in dashboards!
+This setup will allow you to progress through the workshop and start implementing Sentry. This workshop will take you through setting up **Performance Monitoring, Web Vitals tracking, Error Monitoring, Session Replay, Distributed Tracing**, and building production-ready dashboards and alerts!

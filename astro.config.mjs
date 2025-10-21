@@ -5,22 +5,23 @@ import vercel from '@astrojs/vercel';
 
 import sentry from '@sentry/astro';
 
-// https://astro.build/config
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'Sentry Build',
+      title: 'Sentry Build: Fixing Your Frontend',
       logo: {
-        src: './src/assets/placeholder.svg',
+        src: './src/assets/logo-text.svg',
         replacesTitle: true,
       },
-      components: {
-        // Use our custom logo component
-        SiteTitle: './src/components/SentryLogo.astro',
-      },
-      social: {
-        github: 'https://github.com/getsentry/sentry-build-academy-guide',
-      },
+      favicon: '/logo.svg',
+
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/getsentry/sentry-build-frontend-performance-workshop-guide',
+        },
+      ],
       customCss: [
         // Add our custom Sentry theme
         './src/styles/custom.css',
@@ -30,36 +31,54 @@ export default defineConfig({
           label: 'Workshop',
           items: [
             { label: 'Quickstart', slug: 'quickstart' },
-            { label: 'Getting Started with Sentry', slug: 'getting-started' },
             {
-              label: 'Broken Academy Single Sign On (Tracing, Logs, Seer)',
-              slug: 'troubleshooting-auth',
+              label: 'Getting Started with Sentry',
+              slug: 'getting-started',
             },
             {
-              label: 'Solving Broken Search (Sentry MCP, Seer)',
-              slug: 'fixing-course-search',
+              label: 'Optimizing Performance with Web Vitals',
+              slug: 'optimizing-web-vitals',
             },
             {
-              label: 'Debugging AI Implementations (AI Agentic Monitoring)',
-              slug: 'debugging-ai-agent-monitoring',
+              label: 'Distributed Tracing & Backend Performance',
+              slug: 'distributed-tracing',
             },
             {
-              label: 'Taking apart new features (Sentry PR Review)',
-              slug: 'new-feature-pr-review',
+              label: 'Session Replay & Structured Logging',
+              slug: 'session-replay-and-structured-logging',
+            },
+            {
+              label: 'AI-Powered Debugging & Next Steps',
+              slug: 'ai-powered-debugging-and-next-steps',
             },
           ],
         },
         {
           label: 'Resources',
           items: [
-            { label: 'Sentry Documentation', link: 'https://docs.sentry.io/' },
+            { label: 'Sentry Documentation', link: 'https://docs.sentry.io/', attrs: {
+              target: '_blank',
+            } },
             {
               label: 'React SDK',
               link: 'https://docs.sentry.io/platforms/javascript/guides/react/',
+              attrs: {
+                target: '_blank',
+              }
             },
             {
-              label: 'Node SDK',
-              link: 'https://docs.sentry.io/platforms/javascript/guides/node/',
+              label: 'Express SDK',
+              link: 'https://docs.sentry.io/platforms/javascript/guides/express/',
+              attrs: {
+                target: '_blank',
+              }
+            },
+            {
+              label: 'Web Vitals Guide',
+              link: 'https://webvitals.com',
+              attrs: {
+                target: '_blank',
+              }
             },
           ],
         },
@@ -75,7 +94,6 @@ export default defineConfig({
       './src/assets/**/*',
       './src/assets/img/**/*',
       './src/assets/img/**/*.gif',
-      './src/assets/sentry-glyph-light-400x367.png',
     ],
   }),
 });

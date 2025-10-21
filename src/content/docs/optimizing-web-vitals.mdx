@@ -1,0 +1,551 @@
+---
+title: Optimizing Web Vitals
+description: Fix critical frontend performance issues affecting LCP, CLS, and TTFB using Sentry's performance monitoring
+---
+
+import { Steps, LinkButton } from '@astrojs/starlight/components';
+import ScaledImage from '../../components/ScaledImage.astro';
+
+Your e-commerce store is ready for the holiday rush, but performance testing reveals critical problems: images loading slowly from a remote CDN, a promotional banner popping in and shifting content, and a completely blank sale page while waiting for slow backend queries. These issues directly impact Web Vitals scores - and conversion rates. Let's use Sentry to identify and fix them.
+
+## Learning Objectives
+
+By the end of this module, you will:
+
+- Understand how all 5 Web Vitals (LCP, CLS, FCP, TTFB, INP) impact e-commerce conversions
+- Fix slow-loading images causing poor LCP scores and layout shifts
+- Eliminate CLS from conditional banners and unoptimized images
+- Resolve render-blocking page loads with skeleton screens
+- Identify frontend render-blocking patterns causing poor FCP
+- Measure improvements across all metrics using Sentry's Web Vitals dashboard
+
+:::note[Why Web Vitals Matter]
+Google's research shows that sites with good Core Web Vitals scores have **24% lower bounce rates**. For e-commerce, every 100ms improvement in LCP can increase conversion by 1%.
+:::
+
+## Generate Sample Usage Data
+
+Before we start analyzing Web Vitals, let's generate some sample user traffic to create realistic performance data:
+
+```bash title="Generating sample usage data"
+pnpm generate:usage
+```
+
+This command simulates user interactions with your e-commerce app (browsing products, adding to cart, navigating between pages). Once complete, you'll have real performance data in Sentry to analyze.
+
+:::tip
+Keep your dev server running (`pnpm dev`) while this script executes. It should complete in 30-60 seconds and generate transactions you can view in Sentry.
+:::
+
+## Understanding Core Web Vitals
+
+In Module 1, you set up Sentry to automatically capture performance data. Now let's understand what that data means and how to use it to optimize your site.
+
+Sentry tracks five critical Web Vitals metrics that measure how users actually experience your site:
+
+- **LCP (Largest Contentful Paint)**: How long until the main content loads
+  - **Good**: < 2.5s | **Needs Improvement**: 2.5-4s | **Poor**: > 4s
+  - **Weight**: 30% of Performance Score
+
+- **CLS (Cumulative Layout Shift)**: How much content moves around while loading
+  - **Good**: < 0.1 | **Needs Improvement**: 0.1-0.25 | **Poor**: > 0.25
+  - **Weight**: 15% of Performance Score
+
+- **FCP (First Contentful Paint)**: How quickly users see any content on the page
+  - **Good**: < 1.8s | **Needs Improvement**: 1.8-3s | **Poor**: > 3s
+  - **Weight**: 15% of Performance Score
+
+- **TTFB (Time to First Byte)**: How quickly the server responds
+  - **Good**: < 800ms | **Needs Improvement**: 800-1800ms | **Poor**: > 1800ms
+  - **Weight**: 10% of Performance Score
+
+- **INP (Interaction to Next Paint)**: How responsive your page is to user interactions
+  - **Good**: < 200ms | **Needs Improvement**: 200-500ms | **Poor**: > 500ms
+  - **Weight**: 30% of Performance Score
+
+These metrics are combined into a **Performance Score** (0-100) that summarizes your app's overall performance. In this module, we'll focus on fixing two major frontend performance problems:
+
+1. **Homepage (LCP + CLS)**: Slow-loading remote images and a late-appearing promo banner causing combined layout shift issues
+2. **Sale Page (FCP)**: Completely blank page until backend returns data - a render-blocking pattern that prevents any content from painting
+
+To learn more about Web Vitals, check out our <LinkButton href="https://docs.sentry.io/product/performance/web-vitals/" target="_blank" variant="minimal">documentation.</LinkButton>
+
+## Issue #1: Homepage Performance Problems (LCP + CLS)
+
+Your homepage has multiple performance issues working together: slow-loading product images from a remote CDN (poor LCP) combined with a promotional banner that appears after authentication loads (poor CLS). Both affect the same page and compound each other.
+
+### Identifying the Problems
+
+<Steps>
+
+1. **Navigate to the homepage**
+
+   Open [http://localhost:4173](http://localhost:4173) and watch what happens:
+   - The hero section renders first
+   - Product cards appear with collapsed containers (no image yet)
+   - Images load slowly from GitHub, expanding the containers
+   - A promo banner suddenly pops in at the top (for logged-out users)
+   - Everything shifts down!
+
+2. **Check LCP and CLS in Sentry**
+   - Go to your frontend project in Sentry
+   - Navigate to **Insights** → **Frontend** → **Web Vitals**
+   - Filter by page: `/` (homepage)
+   - You'll see LCP scores in the "Poor" range (likely > 4s)
+   - Now check **CLS** for the same page
+   - CLS scores will be "Poor" (> 0.25) for unauthenticated users
+
+</Steps>
+
+<ScaledImage
+  src="/assets/img/vitals-to-improve.png"
+  alt="Sentry Web Vitals dashboard showing poor LCP and CLS"
+/>
+
+### The Root Cause
+
+Looking at `apps/web/src/components/ProductCard.tsx`, you'll see:
+
+```tsx
+<div className="relative">
+  <img
+    src={product.image}
+    alt={product.name}
+    className="w-full object-cover"
+    // ❌ No width/height attributes
+    // ❌ No loading="eager" or "lazy"
+    // ❌ No decoding="async"
+    // ❌ Parent has no aspect-ratio - container collapses until image loads
+  />
+</div>
+```
+
+The images are also loading from `https://raw.githubusercontent.com/...` (remote CDN) instead of being served locally or properly optimized.
+
+Also, the promo banner is appearing after authentication is checked, which causes layout shifts.
+
+```tsx
+export default function PromoBanner() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null; // ❌ Nothing renders, then suddenly appears
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white py-3 px-4...">
+      🎉 New Customer? Get 10% off your first order! Use code: WELCOME10
+    </div>
+  );
+}
+```
+
+### The Fix: Optimize Images + Reserve Banner Space
+
+<Steps>
+
+1. **Add proper image sizing and aspect ratio**
+
+   Open `apps/web/src/components/ProductCard.tsx` and update:
+
+   ```tsx
+   <div className="relative aspect-square">
+     <img
+       src={product.image}
+       alt={product.name}
+       width={300}
+       height={300}
+       loading="eager"
+       decoding="async"
+       className="w-full h-full object-cover"
+     />
+     <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-opacity" />
+   </div>
+   ```
+
+2. **Use local or optimized images**
+
+   For the purposes of this workshop, we were using images from GitHub. In a more realistic scenario, you would use a CDN, but sometimes you may forget to optimize your images.
+
+   Make sure you're serving images that are optimized for the expected experience. For responsive images, you should use the `srcset` attribute to serve the appropriate image for the screen size. Use formats like WebP and AVIF if supported by the browser and always make sure to have fallbacks for older browsers.
+
+3. **Reserve space for the promo banner**
+
+   Update `apps/web/src/components/PromoBanner.tsx` to always reserve space:
+
+   ```tsx
+   import { useAuth } from '../context/AuthContext';
+
+   export default function PromoBanner() {
+     const { isAuthenticated, isLoading } = useAuth();
+
+     // ✅ Always render container to reserve space
+     return (
+       <div className="banner-container" style={{ minHeight: '48px' }}>
+         {!isLoading && !isAuthenticated && (
+           <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white py-3 px-4 text-center font-semibold shadow-md">
+             🎉 New Customer? Get 10% off your first order! Use code: WELCOME10
+           </div>
+         )}
+       </div>
+     );
+   }
+   ```
+
+   By always rendering a container with `minHeight: '48px'`, we prevent layout shift when the banner appears. For authenticated users and during loading, the container remains empty but preserves the vertical space.
+
+4. **Test the improvements**
+   - Reload the homepage (logged out)
+   - Images should load faster and not shift layout
+   - Banner area should not cause layout shifts
+   - Check Sentry → **Web Vitals**:
+     - **LCP** improves from > 4s to < 2.5s ✅
+     - **CLS** improves from > 0.25 to < 0.1 ✅
+
+</Steps>
+
+:::tip[Image + Layout Optimization Quick Wins]
+
+- Set explicit `width` and `height` attributes on all images
+- Use `aspect-ratio` CSS or Tailwind classes (e.g., `aspect-square`) to reserve space
+- Load above-the-fold images with `loading="eager"`
+- Use `loading="lazy"` for below-the-fold images
+- Reserve space for conditional UI (banners, ads) to prevent layout shifts
+- Serve images from optimized CDN or use modern formats (WebP, AVIF)
+  :::
+
+## Issue #2: Render-Blocking Sale Page (FCP)
+
+Your "On Sale" page returns `null` during loading, showing a completely blank white screen until the API call completes. The entire page - including the header and navigation - doesn't render until data arrives. This causes catastrophic FCP (First Contentful Paint) scores because React doesn't paint **anything** while waiting for the backend.
+
+### Identifying the Problem
+
+<Steps>
+
+1. **Navigate to the sale page**
+
+   Go to [http://localhost:4173/sale](http://localhost:4173/sale)
+
+   Notice the **completely blank white screen** for 2-4 seconds? Not even the header loads. That's blocking FCP entirely.
+
+2. **Check FCP in Sentry**
+   - Navigate to **Insights** → **Frontend** → **Web Vitals**
+   - Filter by page: `/sale`
+   - FCP is likely in the "Poor" range (> 3s) - nothing paints until the API returns!
+
+</Steps>
+
+<ScaledImage
+  src="/assets/img/slow-sale-fcp.png"
+  alt="Sentry Web Vitals dashboard showing poor FCP"
+/>
+
+### The Root Cause
+
+Looking at `apps/web/src/pages/Sale.tsx`:
+
+```tsx
+function Sale() {
+  const [products, setProducts] = useState<SaleProduct[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSaleProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await productService.getSaleProducts();
+      setProducts(data);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load sale products. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSaleProducts();
+  }, []);
+
+  if (loading) {
+    return null; // ❌ Nothing renders! Completely blank page!
+  }
+
+  if (error) {
+    return <div>{/* Error UI */}</div>; // ❌ Also no header!
+  }
+
+  return (
+    <>
+      <Header /> {/* ❌ Header only renders AFTER data loads */}
+      <main>{/* Sale products */}</main>
+    </>
+  );
+}
+```
+
+The page returns `null` during loading, meaning **nothing renders at all** - not even the HTML structure! The `<Header />` component (with navigation) only renders after the API call completes. This creates a terrible user experience where visitors see a completely blank white page for 2-4 seconds.
+
+### The Fix: Skeleton Screen
+
+<Steps>
+
+1. **Render page structure immediately**
+
+   Update `apps/web/src/pages/Sale.tsx` to always render the Header and show a skeleton during loading:
+
+   ```tsx
+   import { useEffect, useState } from 'react';
+   import { Link } from 'react-router-dom';
+   import Header from '../components/Header';
+   import { productService } from '../services/api';
+   import { SaleProduct } from '../types';
+   import * as Sentry from '@sentry/react';
+
+   function Sale() {
+     const [products, setProducts] = useState<SaleProduct[]>([]);
+     const [loading, setLoading] = useState<boolean>(true);
+     const [error, setError] = useState<string | null>(null);
+
+     const fetchSaleProducts = async () => {
+       try {
+         setLoading(true);
+         const data = await productService.getSaleProducts();
+         setProducts(data);
+         setError(null);
+       } catch (err) {
+         Sentry.captureException(err);
+         setError('Failed to load sale products. Please try again.');
+       } finally {
+         setLoading(false);
+       }
+     };
+
+     useEffect(() => {
+       fetchSaleProducts();
+     }, []);
+
+     const calculateSavings = (original: string, sale: string) => {
+       const originalPrice = parseFloat(original);
+       const salePrice = parseFloat(sale);
+       const savings = originalPrice - salePrice;
+       const percentage = ((savings / originalPrice) * 100).toFixed(0);
+       return { savings: savings.toFixed(2), percentage };
+     };
+
+     // ✅ Always render header and page structure
+     return (
+       <>
+         <Header />
+         <main className="max-w-7xl mx-auto py-16 px-4">
+           <div className="mb-12 text-center">
+             <h2 className="text-4xl font-bold mb-4">
+               Amazing Deals on Developer Tools
+             </h2>
+             <p className="text-xl text-gray-600">
+               Don't miss out on these incredible savings
+             </p>
+           </div>
+
+           {error ? (
+             // Error state with retry
+             <div className="text-center py-10">
+               <h2 className="text-2xl font-bold mb-4">Error</h2>
+               <p className="text-red-500">{error}</p>
+               <button
+                 onClick={fetchSaleProducts}
+                 className="mt-4 bg-black text-white px-4 py-2 rounded hover:bg-red-500"
+               >
+                 Try Again
+               </button>
+             </div>
+           ) : loading ? (
+             // ✅ Skeleton grid shows immediately
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+               {Array.from({ length: 12 }).map((_, i) => (
+                 <div
+                   key={i}
+                   className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse"
+                 >
+                   <div className="bg-gray-300 h-64 w-full" />
+                   <div className="p-6 space-y-3">
+                     <div className="h-4 bg-gray-300 rounded w-3/4" />
+                     <div className="h-4 bg-gray-300 rounded w-1/2" />
+                   </div>
+                 </div>
+               ))}
+             </div>
+           ) : products.length === 0 ? (
+             // Empty state
+             <div className="text-center py-10">
+               <h2 className="text-2xl font-bold mb-4">
+                 No Sale Items Available
+               </h2>
+               <p className="text-gray-600">
+                 Check back soon for amazing deals!
+               </p>
+             </div>
+           ) : (
+             // Products loaded
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+               {products.map((product) => {
+                 const { savings, percentage } = calculateSavings(
+                   product.originalPrice,
+                   product.salePrice
+                 );
+                 return (
+                   <Link
+                     key={product.id}
+                     to={`/product/${product.id}`}
+                     className="group"
+                   >
+                     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl border-2 border-red-500">
+                       {product.featured && (
+                         <div className="bg-red-500 text-white text-center py-1 font-bold text-sm">
+                           FEATURED DEAL
+                         </div>
+                       )}
+                       <div className="relative">
+                         <img
+                           src={
+                             product.image ||
+                             'https://via.placeholder.com/300x200?text=Product'
+                           }
+                           alt={product.name}
+                           className="w-full h-64 object-cover"
+                         />
+                         <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-2 rounded-full font-bold text-lg">
+                           -{percentage}%
+                         </div>
+                       </div>
+                       <div className="p-6">
+                         <h3 className="text-xl font-semibold mb-2">
+                           {product.name}
+                         </h3>
+                         <p className="text-gray-600 mb-4 line-clamp-2">
+                           {product.description}
+                         </p>
+                         <div className="flex items-center justify-between">
+                           <div>
+                             <p className="text-gray-500 line-through text-sm">
+                               ${parseFloat(product.originalPrice).toFixed(2)}
+                             </p>
+                             <p className="text-3xl font-bold text-red-500">
+                               ${parseFloat(product.salePrice).toFixed(2)}
+                             </p>
+                             <p className="text-green-600 font-semibold text-sm">
+                               Save ${savings}
+                             </p>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   </Link>
+                 );
+               })}
+             </div>
+           )}
+         </main>
+       </>
+     );
+   }
+
+   export default Sale;
+   ```
+
+   Key changes:
+   - **Header always renders** - Users see navigation immediately
+   - **Skeleton appears instantly** - No blank page while loading
+   - **Error state includes Header** - Consistent experience even on failure
+   - **All states properly handled** - Loading, error, empty, and success
+   - **Sale-specific rendering preserved** - Discount badges, featured banners, savings calculations all intact
+
+2. **Test the improvements**
+   - Reload the sale page
+   - You should see header + skeleton immediately, then products load in
+   - Check Sentry → **Web Vitals** for `/sale`:
+     - **FCP** improves from > 3s to < 1.8s ✅
+     - **LCP** also improves with faster perceived loading
+
+</Steps>
+
+:::tip[Skeleton Screen Best Practices]
+
+- Match the skeleton layout to the actual content
+- Use subtle animations (pulse/shimmer) to indicate loading
+- Show skeletons immediately - don't wait for any data
+- Reserve space for all content to avoid layout shifts
+  :::
+
+## Verify Your Improvements
+
+Let's verify that our fixes improved the Web Vitals scores across both pages.
+
+<Steps>
+
+1. **Check the Web Vitals dashboard**
+   - Navigate to **Performance** → **Web Vitals**
+   - View improvements for both pages:
+
+   **Homepage (`/`):**
+   - **LCP**: Should improve from > 4s to < 2.5s ✅
+   - **CLS**: Should improve from > 0.25 to < 0.1 ✅
+
+   **Sale Page (`/sale`):**
+   - **FCP**: Should improve from > 3s to < 1.8s ✅
+
+2. **Compare before and after**
+
+   Use Sentry's comparison view to see the impact:
+   - Filter by time range: Before your changes vs. After
+   - Look at the Performance Score improvement
+   - Check that all affected pages show better scores
+
+3. **Test on real devices**
+   - Test on slow network (throttle to 3G in DevTools)
+   - Test on real mobile devices if available
+   - Verify skeleton screens appear immediately
+   - Confirm no layout shifts occur
+
+</Steps>
+
+## Key Takeaways
+
+- **All 5 Web Vitals tracked**: LCP, CLS, FCP, TTFB, and INP combine into a Performance Score (0-100)
+- **LCP (30% weight)**: Optimize images with proper sizing (`width`/`height` attributes), aspect ratios, lazy loading, and CDN optimization
+- **CLS (15% weight)**: Reserve space for dynamic content (banners, ads) **and** images to prevent layout shifts
+- **FCP (15% weight)**: Never block initial paint - always render page structure immediately with skeleton screens
+- **INP (30% weight)**: Ensure responsive interactions and avoid blocking the main thread
+- **Combined issues**: Homepage performance issues (slow images + late-appearing banner) compound each other
+- **Frontend fixes**:
+  - Add `aspect-ratio` or `aspect-square` to image containers
+  - Reserve space for conditional UI elements with fixed-height containers
+  - Replace render-blocking patterns with skeleton screens
+  - Use `loading="eager"` for above-the-fold images, `loading="lazy"` for below-the-fold
+
+:::note[What's Next?]
+We've fixed the immediate frontend rendering issues, but the Sale page still loads slowly because the backend API takes 2-4 seconds. In the next module, we'll use **distributed tracing** to follow requests from frontend to backend, identify the root cause (an N+1 query problem), and fix it.
+:::
+
+## Production Checklist
+
+Before deploying these frontend optimizations:
+
+- [ ] Images have explicit `width` and `height` attributes
+- [ ] Image containers use `aspect-ratio` or Tailwind `aspect-square` classes
+- [ ] Critical above-the-fold images use `loading="eager"`
+- [ ] Below-the-fold images use `loading="lazy"`
+- [ ] Conditional UI elements (banners) reserve space with fixed-height containers
+- [ ] Page structure (header, navigation) renders immediately - no full-page blocking states
+- [ ] Skeleton screens implemented for data-dependent content
+- [ ] Skeleton layout matches actual content grid/structure
+- [ ] Tested on real devices and slow network connections (throttled to 3G)
+- [ ] Performance Score improved in Sentry dashboard
+
+---
+
+**Next up:** We'll trace frontend slowness to backend bottlenecks and fix N+1 queries using distributed tracing.
