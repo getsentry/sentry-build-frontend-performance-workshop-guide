@@ -164,7 +164,7 @@ The N+1 problem occurs when you fetch N records, then make 1 additional query **
 
 Looking at the code, here's what's happening:
 
-```typescript
+```typescript title="sale.ts"
 // Fetch all products (multiple queries to get products, metadata, categories)
 const allProducts = await tx.select().from(products);
 
@@ -205,7 +205,7 @@ Now that we've identified the problem, let's fix it by using SQL JOINs to fetch 
 
    Replace the entire route with this optimized version:
 
-   ```typescript
+   ```typescript title="sale.ts"
    import express, { Request, Response } from 'express';
    import * as Sentry from '@sentry/node';
    import { db } from '../db';

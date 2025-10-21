@@ -3,7 +3,7 @@ title: Sentry Build
 description: Performance Monitoring Best Practices for High-Traffic E-commerce
 template: splash
 hero:
-  tagline: A hands-on workshop to master error and performance monitoring with Sentry. Learn to optimize your React e-commerce app for holiday traffic spikes using Web Vitals, distributed tracing, and Session Replay.
+  tagline: A hands-on workshop to master error and performance monitoring with Sentry. Learn to optimize your React e-commerce app for holiday traffic spikes using Web Vitals, distributed tracing, Session Replay, Logs and AI-powered debugging.
   image:
     file: /src/assets/logo.svg
   actions:
@@ -21,28 +21,30 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## Workshop Modules
 
 <CardGrid>
-  <Card title="Performance & Error Monitoring Setup" icon="setting">
-    Set up comprehensive Sentry monitoring for your React frontend and Node.js
-    backend. Configure error tracking, Web Vitals monitoring, Session Replay,
-    and alerting to catch critical issues before they impact customers during
-    peak traffic.
+  <Card title="Setting Up Performance & Error Monitoring" icon="setting">
+    Configure Error Monitoring and Performance Monitoring for your React
+    frontend and Node.js backend. Set up Session Replay, structured logging, and
+    distributed tracing to catch critical issues before they impact customers
+    during peak traffic.
   </Card>
-  <Card title="Optimizing Performance with Web Vitals" icon="rocket">
-    Identify and fix performance bottlenecks using Web Vitals (LCP, TTFB, INP).
-    Optimize slow authentication flows, implement custom performance metrics,
-    and use Sentry's Seer AI to get automated fix suggestions for performance
-    issues.
+  <Card title="Optimizing Web Vitals" icon="rocket">
+    Fix slow-loading images causing poor LCP scores, eliminate CLS from
+    conditional banners, and resolve render-blocking page loads with skeleton
+    screens. Measure improvements using Sentry's Web Vitals dashboard.
   </Card>
-  <Card title="Distributed Tracing & Backend Impact" icon="seti:plan">
-    Link frontend slowness to backend performance issues using distributed
-    tracing. Debug slow product searches, identify N+1 queries, optimize
-    database calls, and understand end-to-end request flows from browser to
-    database.
+  <Card title="Distributed Tracing & Backend Performance" icon="seti:plan">
+    Use distributed tracing to connect frontend slowness to backend bottlenecks.
+    Simulate traffic to trigger automatic N+1 query detection, and fix
+    performance problems with SQL JOINs and database optimization.
   </Card>
-  <Card title="Session Replay & Production Readiness" icon="document">
-    Use Session Replay to debug user experience issues and understand checkout
-    failures. Set up performance alerts, create custom dashboards for holiday
-    traffic monitoring, and integrate Slack notifications to catch degradations
-    in real-time.
+  <Card title="Session Replay & Sentry Logs" icon="document">
+    Use Session Replay to identify silent validation failures that block users.
+    Combine Session Replay with Sentry Logs to debug checkout issues affecting
+    specific user segments like Amex cardholders.
+  </Card>
+  <Card title="AI-Powered Debugging & Production Readiness" icon="seti:config">
+    Configure alerts to catch performance regressions and errors. Build
+    dashboards to monitor key metrics, and set up GitHub integration to enable
+    AI-powered debugging capabilities.
   </Card>
 </CardGrid>

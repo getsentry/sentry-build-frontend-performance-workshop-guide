@@ -108,15 +108,7 @@ Looking at `apps/web/src/components/ProductCard.tsx`, you'll see:
 
 ```tsx
 <div className="relative">
-  <img
-    src={product.image}
-    alt={product.name}
-    className="w-full object-cover"
-    // ❌ No width/height attributes
-    // ❌ No loading="eager" or "lazy"
-    // ❌ No decoding="async"
-    // ❌ Parent has no aspect-ratio - container collapses until image loads
-  />
+  <img src={product.image} alt={product.name} className="w-full object-cover" />
 </div>
 ```
 
@@ -152,7 +144,9 @@ export default function PromoBanner() {
 
    Open `apps/web/src/components/ProductCard.tsx` and update:
 
-   ```tsx
+   ```tsx del={1-2} ins={3-12} title="ProductCard.tsx"
+   <div className="relative">
+     <img src={product.image} alt={product.name} className="w-full object-cover" />
    <div className="relative aspect-square">
      <img
        src={product.image}
@@ -177,7 +171,7 @@ export default function PromoBanner() {
 
    Update `apps/web/src/components/PromoBanner.tsx` to always reserve space:
 
-   ```tsx
+   ```tsx title="PromoBanner.tsx"
    import { useAuth } from '../context/AuthContext';
 
    export default function PromoBanner() {
@@ -248,7 +242,7 @@ Your "On Sale" page returns `null` during loading, showing a completely blank wh
 
 Looking at `apps/web/src/pages/Sale.tsx`:
 
-```tsx
+```tsx title="Sale.tsx"
 function Sale() {
   const [products, setProducts] = useState<SaleProduct[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -271,17 +265,18 @@ function Sale() {
     fetchSaleProducts();
   }, []);
 
+  // ❌ Nothing renders! Completely blank page!
   if (loading) {
-    return null; // ❌ Nothing renders! Completely blank page!
+    return null;
   }
 
   if (error) {
-    return <div>{/* Error UI */}</div>; // ❌ Also no header!
+    return <div>{/* Error UI */}</div>;
   }
 
   return (
     <>
-      <Header /> {/* ❌ Header only renders AFTER data loads */}
+      <Header />
       <main>{/* Sale products */}</main>
     </>
   );
@@ -298,7 +293,7 @@ The page returns `null` during loading, meaning **nothing renders at all** - not
 
    Update `apps/web/src/pages/Sale.tsx` to always render the Header and show a skeleton during loading:
 
-   ```tsx
+   ```tsx title="Sale.tsx"
    import { useEffect, useState } from 'react';
    import { Link } from 'react-router-dom';
    import Header from '../components/Header';

@@ -1,25 +1,295 @@
 ---
-title: AI Powered Debugging & Next Steps
-description: Set up alerts, dashboards, and GitHub integration to operate your app in production with confidence
+title: AI-Powered Debugging & Next Steps
+description: Set up GitHub integration, explore Seer's AI debugging capabilities, and learn how to protect your improvements with alerts and dashboards
 ---
 
-## 🚧 Under Construction
+import { Steps } from '@astrojs/starlight/components';
+import ScaledImage from '../../components/ScaledImage.astro';
 
-This module is currently being updated with improved content and examples.
+You've manually instrumented Sentry, debugged Web Vitals, traced N+1 queries through distributed tracing, and used Session Replay to fix silent failures. Throughout this workshop, you've been doing detective work—analyzing traces, reading code, and implementing fixes. Now let's see how Sentry's AI-powered tools can accelerate this workflow.
 
-In the meantime, you can:
+## Learning Objectives
 
-1. **Review previous modules** to reinforce your learning
-2. **Explore Sentry's documentation** on [Alerts](https://docs.sentry.io/product/alerts/) and [Dashboards](https://docs.sentry.io/product/dashboards/)
-3. **Set up a free Sentry account** at [sentry.io](https://sentry.io) to experiment with the features
+By the end of this module, you will:
+
+- Set up GitHub integration to enable AI-powered debugging features
+- Understand how Seer analyzes issues using the same context you used manually
+- See how Seer would have automated the N+1 query analysis from Module 3
+- Learn when to set up alerts and dashboards based on your optimized baseline
+- Review your workshop journey and next steps
+
+## Setting Up GitHub Integration
+
+To enable AI-powered debugging with Seer, you'll need to connect your GitHub repository to Sentry. This allows Seer to read your code, understand your architecture, and provide context-aware suggestions.
+
+<Steps>
+
+1. **Enable AI features in org settings**
+
+   Navigate to **Organization Settings** → **General Settings** and scroll to the "AI Features" section:
+
+   <ScaledImage
+     src="/assets/img/ai-settings.png"
+     alt="Enable AI features in Sentry"
+   />
+
+   Ensure "Autofix" and "AI Insights" are enabled.
+
+2. **Install GitHub integration**
+
+   Go to **Organization Settings** → **Integrations** → **GitHub** and click **Install** (or **Upgrade** if you have the legacy integration):
+
+   <ScaledImage
+     src="/assets/img/github-integration.png"
+     alt="GitHub integration setup"
+   />
+
+3. **Select repositories**
+
+   Choose your forked `unborked` repository (or all repositories) and authorize Sentry in the GitHub popup.
+
+4. **Verify repository access**
+
+   Navigate back to GitHub integration settings, click **Configurations** tab → **Configure**, and confirm your repositories are listed:
+
+   <ScaledImage
+     src="/assets/img/repos-configured.png"
+     alt="Configured repositories"
+   />
+
+5. **(Optional) Configure Seer Automations**
+
+   Navigate to **Settings** → **Seer Automations** to review available automation options:
+
+   <ScaledImage
+     src="/assets/img/auto-fix-config.png"
+     alt="Seer Automations configuration"
+   />
+
+   :::note
+   These settings control automated behaviors like PR creation. You can use Seer's analysis features without enabling automations—they're not required, but good to have configured.
+   :::
+
+</Steps>
+
+:::tip[GitHub Connection Benefits]
+With GitHub connected, Seer can read your code, understand your architecture, and provide context-aware suggestions specific to your codebase—using the same context you used to debug issues manually.
+:::
+
+## What is Seer?
+
+Seer is Sentry's AI debugging assistant that automates the analysis workflow you've been doing manually throughout this workshop.
+
+It uses the same data you used:
+
+- **Traces and spans**: The distributed tracing data you examined in Module 3
+- **Error context**: Stack traces, user actions, and environment data
+- **Source code**: With GitHub integration, your actual implementation
+
+Rather than manually examining waterfalls and reading code, Seer performs this analysis automatically and suggests specific fixes. It's like having an experienced engineer review your traces, identify patterns, read your code, and propose solutions—but in seconds instead of minutes.
+
+## Seer in Action: The N+1 Query from Module 3
+
+Remember how you manually analyzed the N+1 query in Module 3? Let's see how Seer would have automated that same workflow.
+
+<Steps>
+
+1. **The manual workflow you did in Module 3**
+
+   Recall the steps you took:
+   - Ran traffic simulation to trigger N+1 detection
+   - Examined the distributed trace waterfall showing 50+ sequential queries
+   - Identified the N+1 pattern in the codebase (`sale.ts`)
+   - Manually rewrote the query using SQL JOINs
+   - Verified the improvement (2500ms → 150ms, 93% faster)
+
+   This took careful analysis, code reading, and SQL knowledge.
+
+2. **How Seer automates this workflow**
+
+   Navigate to the N+1 issue in your backend project and click **Find Root Cause**:
+
+   <ScaledImage
+     src="/assets/img/seer-intro.png"
+     alt="Seer AI debugging assistant"
+   />
+
+3. **Seer's automated root cause analysis**
+
+   Seer automatically performs the same detective work you did:
+   - Analyzes the distributed trace you examined manually
+   - Identifies the N+1 pattern (50+ sequential database queries)
+   - Reads your actual code from GitHub to understand the implementation
+   - Identifies the specific loop causing the N+1 (the same one you found)
+
+   **Seer performs the same detective work you did in Module 3, but in seconds instead of minutes.**
+
+   <ScaledImage
+     src="/assets/img/analyze-and-rca.png"
+     alt="Seer analyzing the N+1 issue"
+   />
+
+4. **View Seer's suggested solution**
+
+   Seer provides the same fix you implemented:
+   - Replace loop with SQL JOINs (exactly what you did!)
+   - Shows before/after code diff
+   - Explains why JOINs eliminate the N+1 pattern
+   - Estimates the performance improvement (matches what you actually achieved!)
+
+   <ScaledImage
+     src="/assets/img/seer-solution.png"
+     alt="Seer's suggested SQL JOIN solution"
+   />
+
+5. **(Optional) Have Seer create a PR**
+
+   If Seer Automations are enabled, you can click **"Create PR"** or **"Apply Autofix"**:
+   - Seer creates a branch and opens a PR with the fix
+   - Includes explanation, code changes, and estimated impact
+
+   <ScaledImage
+     src="/assets/img/seer-pr.png"
+     alt="Seer-generated pull request"
+   />
+
+   :::caution[Always Review AI-Generated Code]
+   Seer accelerates debugging, but you're still the expert who validates the fix. Always review AI-generated code before merging—understanding the fundamentals lets you confidently approve or adjust Seer's suggestions.
+   :::
+
+</Steps>
+
+:::tip[The Key Insight]
+Seer uses the same tools and context you used (traces, spans, source code), but automates the analysis. You still needed to understand distributed tracing, N+1 patterns, and SQL optimization to validate Seer's suggestions. **The skills you learned in this workshop make you better at using AI tools, not replaced by them.**
+:::
+
+## Protecting Your Improvements: Alerts & Dashboards
+
+Now that you've optimized your application, let's discuss how to protect these improvements and catch regressions before they impact users.
+
+### Why Set Up Monitoring Now?
+
+In Module 1, you didn't know what "good" performance looked like. Now you have baselines:
+
+- LCP < 2.5s (optimized from 4s)
+- API responses < 200ms (optimized from 2500ms)
+- No N+1 queries (fixed the 50+ query pattern)
+
+Set up alerts to catch regressions from this optimized state.
+
+### Alert Recommendations
+
+Here are three essential alerts based on the improvements you made:
+
+#### 1. Error Rate Alert (> 1%)
+
+**What it catches**: Regressions from Module 4's CVV validation fixes
+
+**Why this threshold**: A 1% error rate means 1 in 100 users hits an issue—significant for e-commerce conversion rates. You fixed silent validation failures affecting 25% of users; this alert ensures they stay fixed.
+
+**Configuration**:
+
+- Alert Type: Issues
+- Condition: When error rate is above 1%
+- Environment: Production (or All Environments)
+
+#### 2. LCP Alert (p75 > 2500ms)
+
+**What it protects**: Module 2's Web Vitals improvements (you optimized from 4s to < 2.5s)
+
+**Why this threshold**: Google's "Good" LCP threshold is < 2.5s. Critical for mobile conversions—poor LCP costs ~7% of conversions.
+
+**Configuration**:
+
+- Alert Type: Metric Alert
+- Metric: `p75(measurements.lcp)`
+- Condition: Above 2500ms for 5 minutes
+- Filter: `transaction.op:pageload`
+
+#### 3. Backend Performance Alert (p95 > 1000ms)
+
+**What it catches**: New N+1 patterns like the one you fixed in Module 3
+
+**Why this threshold**: You optimized to ~150ms; 1000ms threshold gives buffer but catches problems before users notice. Protects database connection pool from exhaustion.
+
+**Configuration**:
+
+- Alert Type: Metric Alert
+- Metric: `p95(transaction.duration)`
+- Condition: Above 1000ms
+- Filter: Backend project
+
+### Dashboard Recommendations
+
+Create an **"E-commerce Performance Overview"** dashboard to monitor key metrics at a glance:
+
+**Suggested Widgets**:
+
+1. **Web Vitals Trends** (Line Chart)
+   - Metrics: `p75(measurements.lcp)`, `p75(measurements.cls)`, `p75(measurements.fcp)`
+   - Time Range: Last 7 days
+   - Shows which pages have poor Web Vitals over time
+
+2. **API Performance Table** (Table Widget)
+   - Metric: `p95(transaction.duration)`
+   - Filter: `transaction.op:http.server`
+   - Sort by: p95 (descending)
+   - Highlights your slowest API endpoints
+
+3. **Error Rate Trends** (Area Chart)
+   - Metric: `failure_rate()`
+   - Group By: `transaction`
+   - Time Range: Last 24 hours
+   - Spikes often indicate deployment issues
+
+4. **Traffic & Throughput** (Line Chart)
+   - Metric: `count()`
+   - Group By: `transaction.op`
+   - Time Range: Last 7 days
+   - Understand which parts get the most traffic
+
+:::tip[Dashboard Best Practices]
+Review dashboards weekly during team meetings. Share with stakeholders to demonstrate the improvements you've made: 93% faster API, < 2.5s LCP, fixed silent failures affecting 25% of users.
+:::
+
+### Learn More
+
+- [Alert Setup Guide](https://docs.sentry.io/product/alerts/)
+- [Dashboard Creation Guide](https://docs.sentry.io/product/dashboards/)
+
+## Workshop Summary
+
+Congratulations! Here's what you accomplished:
+
+- **Module 0 - Setup**: Forked and configured the unborked e-commerce application
+- **Module 1 - Instrumentation**: Added Sentry SDKs to frontend (React) and backend (Node.js/Express)
+- **Module 2 - Web Vitals**: Fixed LCP from 4s to < 2.5s by optimizing images and preventing layout shifts
+- **Module 3 - Distributed Tracing**: Resolved N+1 query reducing API response from 2.5s to 150ms (93% faster)
+- **Module 4 - Session Replay & Logs**: Fixed silent CVV validation failures affecting 25% of users
+- **Module 5 - AI & Production**: Set up GitHub integration and learned how Seer automates debugging workflows
+
+## Key Takeaways
+
+🎯 **Real user monitoring** reveals issues that synthetic tests and local development miss
+
+📊 **Performance optimizations** directly impact business metrics (conversions, engagement, revenue)
+
+🔍 **Distributed tracing** connects frontend slowness to backend bottlenecks across your entire stack
+
+🛡️ **Silent failures** need monitoring too—not all issues throw errors
+
+🤖 **AI tools like Seer** accelerate debugging by automating analysis, but you still need to understand the fundamentals to validate their suggestions
+
+## Next Steps
+
+Where to go from here:
+
+- **Set up production monitoring**: Implement the recommended alerts and dashboards for your own applications
+- **Try Seer on your codebase**: Connect your repositories and see what performance issues it finds
+- **Explore advanced features**: Profiling, Cron Monitoring, User Feedback, and more
+- **Join the community**: [Sentry Discord](https://discord.gg/sentry) for tips, support, and learning
+- **Dive deeper**: [Sentry Documentation](https://docs.sentry.io/) for comprehensive guides
 
 ---
 
-**Coming Soon:**
-
-- Setting up performance alerts based on your optimized baselines
-- Creating custom dashboards for monitoring Web Vitals and backend performance
-- Configuring GitHub integration for AI-powered debugging
-- Best practices for production monitoring and alerting
-
-Check back soon! 🚀
+**Thank you for completing this workshop!** You now have the skills and tools to build fast, reliable, production-ready applications with Sentry. 🚀
