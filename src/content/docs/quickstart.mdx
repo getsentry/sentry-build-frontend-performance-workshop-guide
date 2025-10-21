@@ -3,7 +3,7 @@ title: Quickstart Guide
 description: Get up and running with the workshop in minutes
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 import ScaledImage from '../../components/ScaledImage.astro';
 
 Follow this guide to get up and running with the workshop environment in the fastest way possible.
@@ -33,97 +33,108 @@ We recommend setting up two separate projects in your Sentry account: one for th
 
      <ScaledImage src="/assets/img/repo-fork.png" alt="Forking the repository" />
 
-2. **Leave the fork network**
+2.  **Leave the fork network**
 
-   Go to the settings of your forked repo, scroll all the way down to the Danger Zone, click "Leave fork network", and follow the prompts to convert your forked repo into a standalone repo, all nice and isolated from the original.
+    Go to the settings of your forked repo, scroll all the way down to the Danger Zone, click "Leave fork network", and follow the prompts to convert your forked repo into a standalone repo, all nice and isolated from the original.
 
-   <ScaledImage
-     src="/assets/img/leave-fork-network.png"
-     alt="Leaving the fork network"
-     size={75}
-   />
+    <ScaledImage
+      src="/assets/img/leave-fork-network.png"
+      alt="Leaving the fork network"
+      size={75}
+    />
 
-3. **Clone your fork into a directory we're going to call `unborked`**
+3.  **Clone your fork into a directory we're going to call `unborked`**
 
-   ```bash title="Cloning the repository"
-   git clone https://github.com/<your-username>/sentry-build-frontend-performance-workshop-app.git unborked
-   cd unborked
-   ```
+    <Tabs>
+    <TabItem label="HTTPS">
+      ```bash
+      git clone https://github.com/<your-username>/sentry-build-frontend-performance-workshop-app.git unborked
+      cd unborked
+      ```
+    </TabItem>
+    <TabItem label="SSH">
+      ```bash
+      git clone git@github.com:<your-username>/sentry-build-frontend-performance-workshop-app.git unborked
+      cd unborked
+      ```
+    </TabItem>
 
-4. **Install dependencies**
+    </Tabs>
 
-   ```bash title="Installing dependencies"
-   pnpm install && pnpm playwright:install
-   ```
+4.  **Install dependencies**
 
-5. **Set up environment variables**
+    ```bash title="Installing dependencies"
+    pnpm install && pnpm playwright:install
+    ```
 
-   The project uses a turborepo monorepo structure with `apps/web` (frontend) and `apps/api` (backend).
+5.  **Set up environment variables**
 
-   #### Frontend (`apps/web/.env`):
+    The project uses a turborepo monorepo structure with `apps/web` (frontend) and `apps/api` (backend).
 
-   Create the frontend environment file:
+    #### Frontend (`apps/web/.env`):
 
-   ```bash title="Creating the frontend environment file"
-   cat > apps/web/.env << 'EOF'
-   VITE_API_BASE_URL=http://localhost:3001
-   EOF
-   ```
+    Create the frontend environment file:
 
-   :::note
-   We'll add the Sentry DSN to this file in the next module when we instrument the frontend.
-   :::
+    ```bash title="Creating the frontend environment file"
+    cat > apps/web/.env << 'EOF'
+    VITE_API_BASE_URL=http://localhost:3001
+    EOF
+    ```
 
-   #### Backend (`apps/api/.env`):
+    :::note
+    We'll add the Sentry DSN to this file in the next module when we instrument the frontend.
+    :::
 
-   **Option A: Automatic Database setup (Recommended)**
+    #### Backend (`apps/api/.env`):
 
-   Spin up a temporary Postgres database using Neon:
+    **Option A: Automatic Database setup (Recommended)**
 
-   ```bash title="Creating a temporary Postgres database using Neon"
-   pnpm db:new
-   ```
+    Spin up a temporary Postgres database using Neon:
 
-   This will automatically generate a `.env` file inside `apps/api` with a `DATABASE_URL` environment variable. You can claim it to your account later if you want, but it's a good playground for this workshop.
+    ```bash title="Creating a temporary Postgres database using Neon"
+    pnpm db:new
+    ```
 
-   **Option B: Manual Database Setup**
+    This will automatically generate a `.env` file inside `apps/api` with a `DATABASE_URL` environment variable. You can claim it to your account later if you want, but it's a good playground for this workshop.
 
-   If you prefer to use your own PostgreSQL instance (local or hosted via [Neon](https://neon.tech)/[Supabase](https://supabase.com)), create the backend environment file:
+    **Option B: Manual Database Setup**
 
-   ```bash title="Creating the backend environment file"
-   cat > apps/api/.env << 'EOF'
-   DATABASE_URL=postgresql://user:password@localhost:5432/unborked
-   EOF
-   ```
+    If you prefer to use your own PostgreSQL instance (local or hosted via [Neon](https://neon.tech)/[Supabase](https://supabase.com)), create the backend environment file:
 
-   Replace `user:password@localhost:5432/unborked` with your actual database connection string.
+    ```bash title="Creating the backend environment file"
+    cat > apps/api/.env << 'EOF'
+    DATABASE_URL=postgresql://user:password@localhost:5432/unborked
+    EOF
+    ```
 
-   :::note
-   We'll add the Sentry DSN to this file in the next module when we instrument the backend.
-   :::
+    Replace `user:password@localhost:5432/unborked` with your actual database connection string.
 
-6. **Run database migrations and seed data**
+    :::note
+    We'll add the Sentry DSN to this file in the next module when we instrument the backend.
+    :::
 
-   From the root `unborked` directory:
+6.  **Run database migrations and seed data**
 
-   ```bash title="Running database migrations and seed data"
-   pnpm db:migrate
-   pnpm db:seed
-   ```
+    From the root `unborked` directory:
 
-7. **Start the development servers**
+    ```bash title="Running database migrations and seed data"
+    pnpm db:migrate
+    pnpm db:seed
+    ```
 
-   This single command starts both frontend and backend:
+7.  **Start the development servers**
 
-   ```bash title="Starting the development servers"
-   pnpm dev
-   ```
+    This single command starts both frontend and backend:
 
-8. **Access the application**
+    ```bash title="Starting the development servers"
+    pnpm dev
+    ```
 
-   The project will now be running:
-   - Frontend: [http://localhost:4173](http://localhost:4173)
-   - Backend API: [http://localhost:3001](http://localhost:3001)
+8.  **Access the application**
+
+    The project will now be running:
+    - Frontend: [http://localhost:4173](http://localhost:4173)
+    - Backend API: [http://localhost:3001](http://localhost:3001)
 
 </Steps>
 
