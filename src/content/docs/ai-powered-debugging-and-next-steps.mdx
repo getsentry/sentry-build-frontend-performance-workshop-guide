@@ -78,9 +78,23 @@ With GitHub connected, Seer can read your code, understand your architecture, an
 
 ## What is Seer?
 
-Seer is Sentry's AI debugging assistant that automates the analysis workflow you've been doing manually throughout this workshop.
+**Seer is Sentry's AI Debugger**—your debugging buddy that actually likes debugging.
 
-It uses the same data you used:
+If Sentry tells you _what_ broke, Seer tells you _why_ it broke, how to fix it, and sometimes even drafts the fix for you.
+
+Seer works alongside you from first line to production:
+
+- **In-Development**: Connects to your local environment, helping you and your coding agents (Cursor, Claude, Codex) reason through tricky bugs faster
+- **In-Review (Pre-Production)**: Reviews PRs to identify potential bugs before they land, guiding you through fixes via GitHub Actions, CLI, or MCP
+- **In-Production**: Automatically triages issues, performs deep root cause analysis, and drafts fixes using the same data you've been analyzing in this workshop
+
+### Seer's Three Core Powers
+
+1. **Error Prediction**: Flags bugs in your changes before they reach production
+2. **Root Cause Analysis**: Pinpoints why things broke across distributed systems using traces and telemetry
+3. **Autofix**: Collaborates with coding agents to propose and draft actual fixes
+
+In this workshop, you've been manually doing root cause analysis—examining traces, reading code, identifying patterns. Seer automates this workflow by using the same data you used:
 
 - **Traces and spans**: The distributed tracing data you examined in Module 3
 - **Error context**: Stack traces, user actions, and environment data
@@ -88,9 +102,11 @@ It uses the same data you used:
 
 Rather than manually examining waterfalls and reading code, Seer performs this analysis automatically and suggests specific fixes. It's like having an experienced engineer review your traces, identify patterns, read your code, and propose solutions—but in seconds instead of minutes.
 
-## Seer in Action: The N+1 Query from Module 3
+## Seer in Action: Root Cause Analysis for Production Issues
 
-Remember how you manually analyzed the N+1 query in Module 3? Let's see how Seer would have automated that same workflow.
+Let's explore Seer's **In-Production** capabilities by looking at how it automates the N+1 query analysis you did manually in Module 3.
+
+Remember how you manually analyzed that N+1 query? Let's see how Seer's Root Cause Analysis would have automated that same workflow.
 
 <Steps>
 
@@ -266,7 +282,7 @@ Congratulations! Here's what you accomplished:
 - **Module 2 - Web Vitals**: Fixed LCP from 4s to < 2.5s by optimizing images and preventing layout shifts
 - **Module 3 - Distributed Tracing**: Resolved N+1 query reducing API response from 2.5s to 150ms (93% faster)
 - **Module 4 - Session Replay & Logs**: Fixed silent CVV validation failures affecting 25% of users
-- **Module 5 - AI & Production**: Set up GitHub integration and learned how Seer automates debugging workflows
+- **Module 5 - AI & Production**: Set up GitHub integration and explored Seer, Sentry's AI Debugger that works from development through production
 
 ## Key Takeaways
 
@@ -278,14 +294,17 @@ Congratulations! Here's what you accomplished:
 
 🛡️ **Silent failures** need monitoring too—not all issues throw errors
 
-🤖 **AI tools like Seer** accelerate debugging by automating analysis, but you still need to understand the fundamentals to validate their suggestions
+🤖 **AI debuggers like Seer** accelerate your workflow by automating error prediction, root cause analysis, and autofix—but understanding the fundamentals (which you just learned!) makes you better at using these tools, not replaced by them
 
 ## Next Steps
 
 Where to go from here:
 
 - **Set up production monitoring**: Implement the recommended alerts and dashboards for your own applications
-- **Try Seer on your codebase**: Connect your repositories and see what performance issues it finds
+- **Try Seer across your workflow**:
+  - Use Error Prediction in your PRs to catch bugs before production
+  - Let Root Cause Analysis handle production incidents automatically
+  - Integrate with Cursor or your preferred coding agent for seamless debugging
 - **Explore advanced features**: Profiling, Cron Monitoring, User Feedback, and more
 - **Join the community**: [Sentry Discord](https://discord.gg/sentry) for tips, support, and learning
 - **Dive deeper**: [Sentry Documentation](https://docs.sentry.io/) for comprehensive guides
