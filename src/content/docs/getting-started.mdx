@@ -362,6 +362,33 @@ Save both DSN values - you'll need them in the next steps.
 
 </Steps>
 
+:::tip[Track User Context with Sentry.setUser()]
+To associate errors and performance data with specific users, call `Sentry.setUser()` when users authenticate. This helps you understand which users are affected by issues.
+
+**Where to add it:** In your `AuthContext` (`apps/web/src/context/AuthContext.tsx`), add these three changes:
+
+```typescript title="AuthContext.tsx" ins={2, 8-11, 16}
+// 1. Add import at the top
+import * as Sentry from '@sentry/react';
+
+// 2. Inside login function (after successful login):
+localStorage.setItem('token', response.token);
+localStorage.setItem('user', JSON.stringify(response.user));
+
+Sentry.setUser({
+  id: response.user.id,
+  username: response.user.username,
+});
+
+// 3. Inside logout function:
+localStorage.removeItem('user');
+
+Sentry.setUser(null);
+```
+
+This context will appear in all errors, performance transactions, and session replays, making it easier to debug user-specific issues.
+:::
+
 <ScaledImage
   src="/assets/img/frontend-setup.png"
   alt="Sentry Traces on the frontend"
