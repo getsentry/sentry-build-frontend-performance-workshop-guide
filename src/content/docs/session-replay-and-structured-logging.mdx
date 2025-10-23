@@ -19,6 +19,15 @@ By the end of this module, you will:
 
 ---
 
+## Before we proceed
+
+Lets update Session Replay sample rate to 100% to make it easier to reproduce the issue.
+
+```ts title="apps/web/src/instrument.ts" del={1} ins={2}
+replaysSessionSampleRate: 0.1, // 10% of sessions
+replaysSessionSampleRate: 1.0, // 100% of sessions
+```
+
 ## Problem: Silent CVV Validation Failures
 
 Your e-commerce store recently migrated payment gateways. Everything seems fine, but checkout completion rates have mysteriously dropped by ~25%. No errors are being thrown, but users are silently failing to complete purchases.
@@ -49,11 +58,11 @@ Now open **Session Replay** in Sentry to watch the recording of your checkout at
 
 After investigating with **Session Replay** and **Sentry Logs**, you discover:
 
-```tsx
+```tsx title="Cart.tsx (lines 53-61)"
 // The broken validation code
 const validateCVV = (cvv: string) => {
   if (cvv.length !== 3) {
-    // ❌ Logs to Sentry but user sees nothing!
+    // ❌ Logs to console and Sentry but user sees nothing!
     console.error(
       `CVV validation failed: Expected 3 digits, got ${cvv.length}`
     );

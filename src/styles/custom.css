@@ -284,6 +284,14 @@ h6,
   border-left: 1px solid var(--sl-color-border);
 }
 
+.sl-link-button.minimal {
+  color: var(--sl-color-accent-high);
+  padding-inline: 0;
+  text-decoration: underline;
+  padding: 0;
+  margin: 0;
+}
+
 /* Increase paragraph and body text size */
 .sl-markdown-content p,
 .sl-markdown-content li,

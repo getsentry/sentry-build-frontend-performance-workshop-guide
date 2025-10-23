@@ -106,9 +106,14 @@ Your homepage has multiple performance issues working together: slow-loading pro
 
 Looking at `apps/web/src/components/ProductCard.tsx`, you'll see:
 
-```tsx
+```tsx title="ProductCard.tsx (lines 48-55)"
 <div className="relative">
-  <img src={product.image} alt={product.name} className="w-full object-cover" />
+  <img 
+    src={product.image} 
+    alt={product.name} 
+    className="w-full object-cover" 
+  />
+  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-opacity" />
 </div>
 ```
 
@@ -116,7 +121,7 @@ The images are also loading from `https://raw.githubusercontent.com/...` (remote
 
 Also, the promo banner is appearing after authentication is checked, which causes layout shifts.
 
-```tsx
+```tsx title="PromoBanner.tsx"
 export default function PromoBanner() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -144,9 +149,13 @@ export default function PromoBanner() {
 
    Open `apps/web/src/components/ProductCard.tsx` and update:
 
-   ```tsx del={1-2} ins={3-12} title="ProductCard.tsx"
+   ```tsx del={1-6} ins={7-16} title="ProductCard.tsx"
    <div className="relative">
-     <img src={product.image} alt={product.name} className="w-full object-cover" />
+     <img 
+       src={product.image} 
+       alt={product.name} 
+       className="w-full object-cover" 
+     />
    <div className="relative aspect-square">
      <img
        src={product.image}
